@@ -1,23 +1,31 @@
-import logo from './logo.svg';
-import './App.css';
+import "./App.css";
+import { useEffect, useState } from "react";
 
 function App() {
+  const queryParameters = new URLSearchParams(window.location.search);
+  const id = queryParameters.get("id");
+  
+  const [msg, setMsg] = useState("We are CISCO");
+  
+  const path = localStorage.getItem("path")
+
+  useEffect(()=>{
+    fetch(`/codechecker/report/${id}`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: {path:path}
+    }).then((res) => {
+      const resp = res.json();
+      setMsg(resp.clue)
+    })
+  })
+  
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      {msg}
     </div>
   );
 }
