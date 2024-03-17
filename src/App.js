@@ -1,52 +1,94 @@
+import {
+  Alert,
+  AppBar,
+  Box,
+  Button,
+  Grid,
+  Icon,
+  Paper,
+  Step,
+  StepContent,
+  StepLabel,
+  Stepper,
+  Typography,
+} from "@mui/material";
 import "./App.css";
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { get_hint } from "./slice";
 
 function App() {
-  const queryParameters = new URLSearchParams(window.location.search);
-  const id = queryParameters.get("id");
-
-  const [msg, setMsg] = useState("We are CISCO");
-
-  let path = JSON.parse(localStorage.getItem("path"));
-  let timing = JSON.parse(localStorage.getItem("timing"));
+  const dispatch = useDispatch();
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    dispatch(get_hint());
+  }, []);
+  const { steps, path, invalid } = useSelector((state) => state.hunt);
 
   useEffect(() => {
-    fetch(`/codechecker/report/${id}`, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: { path: path },
-    }).then((res) => {
-      const resp = res.json();
-      setMsg(resp.clue);
-      if (resp.status) {
-        path.push(id);
-        localStorage.setItem("path", path);
-        timing.push({
-          date: new Date().toLocaleDateString(),
-          time: new Date().toLocaleTimeString(),
-        });
-        localStorage.setItem("timing", timing);
-      }
-    });
-  });
+    setShow(invalid);
+    const timeId = setTimeout(() => {
+      setShow(false);
+    }, 3000);
+
+    return () => {
+      clearTimeout(timeId);
+    };
+  }, [invalid]);
+
+  console.log(path);
 
   return (
     <div className="App">
-      <div>{msg}</div>
-      <div>
-        {msg === "You have completed"
-          ? timing.map((value, ind) => {
-              return (
-                <div>
-                  <div>{`${ind} found at ${value.date} ${value.time}`}</div>
-                </div>
-              );
-            })
-          : null}
-      </div>
+      <AppBar>
+        <Typography>
+          Scavenger Hunt
+        </Typography>
+      </AppBar>
+      <Grid
+        container
+        spacing={0}
+        direction="column"
+        alignItems="center"
+        justifyContent="center"
+        sx={{ minHeight: "100vh" }}
+      >
+        <Grid item xs={3}>
+          <Box sx={{ maxWidth: 400 }}>
+            <Stepper
+              activeStep={path.length === 0 ? 0 : path.length - 1}
+              orientation="vertical"
+            >
+              {steps.map((step, index) => (
+                <Step key={step.label}>
+                  <StepLabel
+                    optional={
+                      step.solved_at !== null ? (
+                        <Typography variant="caption">
+                          {step.solved_at}
+                        </Typography>
+                      ) : null
+                    }
+                  >
+                    {step.label}
+                  </StepLabel>
+                  <StepContent>
+                    <Typography>{step.description}</Typography>
+                  </StepContent>
+                </Step>
+              ))}
+            </Stepper>
+            {path.length === steps.length && (
+              <Paper square elevation={0} sx={{ p: 3 }}>
+                <Typography>
+                  Hooray you completed cisco scavenger hunt
+                </Typography>
+              </Paper>
+            )}
+          </Box>
+        </Grid>
+        {show ? <Alert severity="error">Invalid QR</Alert> : null}
+      </Grid>
     </div>
   );
 }
